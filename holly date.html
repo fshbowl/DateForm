@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quick question</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #2ec4b6;       /* turquoise */
+    --ink: #073b4c;
+    --white: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  html, body { min-height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Fraunces", Georgia, serif;
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    padding: 24px;
+    text-align: center;
+    overflow: hidden;
+  }
+  main { max-width: 560px; width: 100%; position: relative; z-index: 2; }
+  h1 { font-size: clamp(2rem, 7vw, 3.4rem); line-height: 1.1; margin: 0 0 16px; font-weight: 800; }
+  p  { font-size: 1.2rem; line-height: 1.5; margin: 0 0 24px; }
+  .emoji { font-size: 3.5rem; display: block; margin-bottom: 8px; }
+  .buttons { display: flex; gap: 20px; justify-content: center; align-items: center; min-height: 90px; flex-wrap: wrap; }
+  button {
+    font: inherit; font-weight: 800; cursor: pointer;
+    border: 3px solid var(--ink); border-radius: 999px;
+    padding: 12px 34px; font-size: 1.15rem;
+  }
+  button:focus-visible { outline: 3px solid var(--white); outline-offset: 3px; }
+  .buttons.stack { flex-direction: column; gap: 14px; }
+  .buttons.stack button { max-width: 100%; }
+  .yes { background: var(--ink); color: var(--white); }
+  .no  { background: var(--white); color: var(--ink); }
+  .hell { background: #ff5d73; color: var(--ink); font-size: 1.3rem; }
+  .runner { transition: left .12s ease-out, top .12s ease-out; }
+  .runner.flying { position: fixed; z-index: 5; }
+  .hidden { display: none; }
+  .screen { transition: opacity .3s ease; }
+  .screen.fading { opacity: 0; }
+
+  #progress { margin: 0 auto 28px; width: min(80%, 320px); transition: opacity .3s ease; }
+  #progress.off { opacity: 0; }
+  #progressText { font-size: .95rem; font-weight: 600; margin-bottom: 8px; }
+  .bar { height: 10px; background: rgba(7,59,76,.25); border-radius: 999px; overflow: hidden; }
+  #barFill { height: 100%; width: 0; background: var(--ink); border-radius: 999px; transition: width .5s ease; }
+  .bar.big { width: min(80%, 360px); height: 16px; margin: 8px auto 0; }
+  #barFill2 { height: 100%; width: 0; background: var(--ink); border-radius: 999px; transition: width .8s ease; }
+  .small { font-size: .95rem; opacity: .8; }
+
+  .photo { width: min(70vw, 320px); max-height: 42vh; object-fit: cover; border-radius: 20px; border: 4px solid var(--ink); margin-bottom: 16px; }
+
+  #out h1 { font-size: clamp(2.2rem, 11vw, 5rem); word-break: break-word; animation: shake .4s infinite; }
+  @keyframes shake {
+    0%,100% { transform: translate(0,0) rotate(0); }
+    25% { transform: translate(-4px,2px) rotate(-1deg); }
+    75% { transform: translate(4px,-2px) rotate(1deg); }
+  }
+
+  /* GIF corners */
+  .gif { position: fixed; z-index: 1; width: clamp(80px, 22vw, 220px); height: auto; pointer-events: none; border-radius: 16px; }
+  .gif.topLeft     { top: 12px;    left: 12px; }
+  .gif.topRight    { top: 12px;    right: 12px; }
+  .gif.bottomLeft  { bottom: 12px; left: 12px; }
+  .gif.bottomRight { bottom: 12px; right: 12px; }
+
+  #confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+  @media (prefers-reduced-motion: reduce) { #out h1 { animation: none; } .screen, #progress, #barFill, #barFill2 { transition: none; } }
+</style>
+</head>
+<body>
+
+<img id="gifTL" class="gif topLeft hidden" alt="">
+<img id="gifTR" class="gif topRight hidden" alt="">
+<img id="gifBL" class="gif bottomLeft hidden" alt="">
+<img id="gifBR" class="gif bottomRight hidden" alt="">
+<canvas id="confetti"></canvas>
+
+<main>
+  <div id="progress">
+    <div id="progressText">Question 1 of 5</div>
+    <div class="bar"><div id="barFill"></div></div>
+  </div>
+
+  <!-- 1. Are you her? -->
+  <section class="screen" id="page1">
+    <h1 id="q1"></h1>
+    <div class="buttons">
+      <button class="yes" data-go="pDonkey" data-confetti>Yes</button>
+      <button class="no" id="no1">No</button>
+    </div>
+  </section>
+
+  <!-- Wrong person -->
+  <section class="screen hidden" id="out">
+    <h1>GET OUTTTTTTTTT 🚪</h1>
+  </section>
+
+  <!-- 2. Do you like donkeys? -->
+  <section class="screen hidden" id="pDonkey">
+    <span class="emoji">🫏</span>
+    <h1>Do you like donkeys?</h1>
+    <div class="buttons">
+      <button class="yes" data-go="pWalk" data-log="Likes donkeys: Yes">Yes</button>
+      <button class="no" data-go="pAwkward">No</button>
+    </div>
+  </section>
+
+  <!-- 2b. Awkward -->
+  <section class="screen hidden" id="pAwkward">
+    <h1>I feel like you're lying... are you sure?</h1>
+    <div class="buttons">
+      <button class="yes" data-go="pSure">Yes</button>
+      <button class="no" data-go="pConfirm" data-log="Said she's NOT sure at 'are you sure?'">No</button>
+    </div>
+  </section>
+
+  <!-- 2c. Sure you're sure -->
+  <section class="screen hidden" id="pSure">
+    <span class="emoji">🤨</span>
+    <h1>Are you sure you're sure?</h1>
+    <div class="buttons">
+      <button class="yes" data-go="pBalright" data-log="Likes donkeys: No (held firm all the way!)">Yes</button>
+      <button class="no" data-go="pConfirm" data-log="Said she's NOT sure at 'are you sure you're sure?'">No</button>
+    </div>
+  </section>
+
+  <!-- 2e. Okay so you DO like donkeys? -->
+  <section class="screen hidden" id="pConfirm">
+    <span class="emoji">🤔</span>
+    <h1>Okay so you DO like donkeys?</h1>
+    <div class="buttons">
+      <button class="yes" data-go="pWalk" data-log="Confirmed she DOES like donkeys">Yes</button>
+      <button class="no" data-go="pRigamarole" data-log="Said no to 'so you DO like donkeys?'">No</button>
+    </div>
+  </section>
+
+  <!-- 2f. Rigamarole -->
+  <section class="screen hidden" id="pRigamarole">
+    <span class="emoji">🙄</span>
+    <h1>I'm done with all this donkey rigamarole</h1>
+    <div class="buttons stack">
+      <button class="yes" data-go="pWalk" data-log="Picked: 'I love donkeys how did you know!!!!!'">I love donkeys how did you know!!!!!</button>
+      <button class="yes" data-go="pWalk" data-log="Picked: 'wow you read my mind it's a bucket list item!!'">wow you read my mind it's a bucket list item!!</button>
+    </div>
+  </section>
+
+  <!-- 2d. Balright -->
+  <section class="screen hidden" id="pBalright">
+    <span class="emoji">😤</span>
+    <h1>BALRIGHTTTT</h1>
+    <p>Your options are:</p>
+    <div class="buttons">
+      <button class="yes" data-go="pWalk">Yes</button>
+      <button class="yes" data-go="pWalk">Yes</button>
+    </div>
+  </section>
+
+  <!-- 2g. Walking a donkey -->
+  <section class="screen hidden" id="pWalk">
+    <span class="emoji">🚶🫏</span>
+    <h1>What about WALKING a donkey (your own special one)?</h1>
+    <div class="buttons">
+      <button class="yes" data-go="pLike" data-log="Walking a donkey: Yes">Yes</button>
+      <button class="no" data-go="pWalkAwkward" data-log="Walking a donkey: said No at first">No</button>
+    </div>
+  </section>
+
+  <!-- 2h. Walking chain: awkward -->
+  <section class="screen hidden" id="pWalkAwkward">
+    <h1>cmon lil bro are you sure??</h1>
+    <div class="buttons">
+      <button class="yes" data-go="pWalkSure">Yes</button>
+      <button class="no" data-go="pWalkConfirm" data-log="Walking a donkey: NOT sure at 'are you sure?'">No</button>
+    </div>
+  </section>
+
+  <!-- 2i. Walking chain: sure you're sure -->
+  <section class="screen hidden" id="pWalkSure">
+    <span class="emoji">🤨</span>
+    <h1>Are you sure you're sure?</h1>
+    <div class="buttons">
+      <button class="yes" data-go="pWalkBalright" data-log="Walking a donkey: No (held firm all the way!)">Yes</button>
+      <button class="no" data-go="pWalkConfirm" data-log="Walking a donkey: NOT sure at 'are you sure you're sure?'">No</button>
+    </div>
+  </section>
+
+  <!-- 2j. Walking chain: balright -->
+  <section class="screen hidden" id="pWalkBalright">
+    <span class="emoji">😤</span>
+    <h1>BALRIGHTTTT</h1>
+    <p>Your options are:</p>
+    <div class="buttons">
+      <button class="yes" data-go="pLike">Yes</button>
+      <button class="yes" data-go="pLike">Yes</button>
+    </div>
+  </section>
+
+  <!-- 2k. Walking chain: so you DO want to? -->
+  <section class="screen hidden" id="pWalkConfirm">
+    <span class="emoji">🤔</span>
+    <h1>Okay so you DO want to walk a donkey?</h1>
+    <div class="buttons">
+      <button class="yes" data-go="pLike" data-log="Walking a donkey: confirmed she DOES want to">Yes</button>
+      <button class="no" data-go="pWalkRigamarole" data-log="Walking a donkey: said no to 'so you DO want to?'">No</button>
+    </div>
+  </section>
+
+  <!-- 2l. Walking chain: rigamarole -->
+  <section class="screen hidden" id="pWalkRigamarole">
+    <span class="emoji">🙄</span>
+    <h1>I'm done with all this donkey rigamarole</h1>
+    <div class="buttons stack">
+      <button class="yes" data-go="pLike" data-log="Walking a donkey, picked: 'I love walking donkeys how did you know!!!!!'">I love walking donkeys how did you know!!!!!</button>
+      <button class="yes" data-go="pLike" data-log="Walking a donkey, picked: 'wow you read my mind it's a bucket list item!!'">wow you read my mind it's a bucket list item!!</button>
+    </div>
+  </section>
+
+  <!-- 3. Do you like this man? -->
+  <section class="screen hidden" id="pLike">
+    <h1>Do you like this man?</h1>
+    <img id="photo" class="photo hidden" alt="">
+    <div class="buttons">
+      <button class="yes" data-go="pDate" data-log="Likes him: Yes">Yes</button>
+      <button class="hell" data-go="pDate" data-log="Likes him: HELL YES" data-confetti>HELL YES</button>
+    </div>
+  </section>
+
+  <!-- 4. The date -->
+  <section class="screen hidden" id="pDate">
+    <span class="emoji">💘</span>
+    <h1>Would you like to go on a date with me to walk our own donkeys?</h1>
+    <div class="buttons">
+      <button class="yes" id="yes2">Yes</button>
+      <button class="no runner" id="no2">No</button>
+    </div>
+  </section>
+
+  <!-- "n/4 completed" page between questions -->
+  <section class="screen hidden" id="pProgress">
+    <span class="emoji">✅</span>
+    <h1><span id="doneCount">1</span>/<span id="doneTotal">5</span> completed</h1>
+    <div class="bar big"><div id="barFill2"></div></div>
+  </section>
+
+  <!-- Done -->
+  <section class="screen hidden" id="done">
+    <span class="emoji">🎉</span>
+    <h1>Wooooo!!!!</h1>
+    <p id="doneText"></p>
+    <p class="small">5/5 completed ✓</p>
+  </section>
+</main>
+
+<script>
+  // ================= EDIT THESE =================
+  const HER_NAME   = "Holly Nixon";
+  const YOUR_NAME  = "Harry Unthank";
+  const ACCESS_KEY = "PASTE_WEB3FORMS_KEY_HERE";   // free key from web3forms.com
+
+  // Your photo for the "Do you like this man?" page.
+  // Put the file in your repo next to index.html and write its name, e.g. "me.jpg"
+  const PHOTO = "me.jpeg";
+
+  // GIFs: paste an image/GIF URL, or a file path from your repo (e.g. "gifs/hello.gif").
+  // Leave "" to keep a corner empty.
+  const GIFS = {
+    topLeft:     "ratomilton.gif",
+    topRight:    "horsepiano.gif",
+    bottomLeft:  "catdance.gif",
+    bottomRight: "ooeeaa.gif"
+  };
+  // ==============================================
+
+  const $ = id => document.getElementById(id);
+  $("q1").textContent = `Are you ${HER_NAME}?`;
+  $("doneText").textContent = `${YOUR_NAME} will be in touch soon about the date :D`;
+  if (PHOTO) { $("photo").src = PHOTO; $("photo").classList.remove("hidden"); }
+
+  // ---- corner GIFs ----
+  [["gifTL","topLeft"],["gifTR","topRight"],["gifBL","bottomLeft"],["gifBR","bottomRight"]].forEach(([id,key]) => {
+    if (GIFS[key]) { $(id).src = GIFS[key]; $(id).classList.remove("hidden"); }
+  });
+
+  // ---- page switching ----
+  const TOTAL = 5;
+  $("doneTotal").textContent = TOTAL;
+  const STEPS = { page1: 1, pDonkey: 2, pAwkward: 2, pSure: 2, pBalright: 2, pConfirm: 2, pRigamarole: 2, pWalk: 3, pWalkAwkward: 3, pWalkSure: 3, pWalkBalright: 3, pWalkConfirm: 3, pWalkRigamarole: 3, pLike: 4, pDate: 5 };
+
+  function updateProgress(id) {
+    const bar = $("progress");
+    if (id === "out" || id === "pProgress") { bar.classList.add("off"); return; }
+    bar.classList.remove("off");
+    if (id === "done") {
+      $("progressText").textContent = "All done!";
+      $("barFill").style.width = "100%";
+    } else {
+      const n = STEPS[id];
+      $("progressText").textContent = `Question ${n} of ${TOTAL}`;
+      $("barFill").style.width = ((n - 1) / TOTAL * 100) + "%";
+    }
+  }
+
+  let showToken = 0;
+  function show(id) {
+    const token = ++showToken;
+    const current = document.querySelector(".screen:not(.hidden)");
+    const instant = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    updateProgress(id);
+
+    const swap = () => {
+      if (token !== showToken) return;
+      document.querySelectorAll(".screen").forEach(s => {
+        s.classList.toggle("hidden", s.id !== id);
+        s.classList.remove("fading");
+      });
+      const next = $(id);
+      next.classList.add("fading");   // start invisible...
+      void next.offsetWidth;          // ...then fade in
+      next.classList.remove("fading");
+    };
+
+    if (!current || current.id === id || instant) { swap(); return; }
+    current.classList.add("fading");  // fade the old page out first
+    setTimeout(swap, 300);
+  }
+  updateProgress("page1");
+
+  // Going to these pages first shows a "n/4 completed" page
+  const COMPLETED_BEFORE = { pDonkey: 1, pWalk: 2, pLike: 3, pDate: 4 };
+
+  function showCompleted(n, dest) {
+    $("doneCount").textContent = n;
+    $("barFill2").style.width = ((n - 1) / TOTAL * 100) + "%";
+    show("pProgress");
+    setTimeout(() => { $("barFill2").style.width = (n / TOTAL * 100) + "%"; }, 450);
+    setTimeout(() => show(dest), 2200);
+  }
+
+  // Every button with data-go moves to that page. data-log is saved for your email.
+  const log = [];
+  document.querySelectorAll("[data-go]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (btn.dataset.log) log.push(btn.dataset.log);
+      if ("confetti" in btn.dataset) confetti();
+      const dest = btn.dataset.go;
+      if (dest in COMPLETED_BEFORE) showCompleted(COMPLETED_BEFORE[dest], dest);
+      else show(dest);
+    });
+  });
+
+  // ---- send result by email ----
+  async function sendResult(subject, message) {
+    try {
+      const res = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ access_key: ACCESS_KEY, subject, from_name: "Date invite page", message })
+      });
+      return (await res.json()).success === true;
+    } catch (e) { return false; }
+  }
+
+  // ---- confetti (no libraries) ----
+  const canvas = $("confetti"), ctx = canvas.getContext("2d");
+  let parts = [], running = false;
+  function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
+  addEventListener("resize", resize); resize();
+
+  function confetti() {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const colors = ["#ff595e","#ffca3a","#8ac926","#1982c4","#6a4c93","#ffffff","#ff99c8"];
+    const rand = (a,b) => a + Math.random()*(b-a);
+    const w = canvas.width, h = canvas.height;
+    for (let i = 0; i < 220; i++) {
+      const fromSide = i % 3;               // 0 centre, 1 left cannon, 2 right cannon
+      const x = fromSide === 1 ? 0 : fromSide === 2 ? w : w/2;
+      const y = fromSide === 0 ? h*0.55 : h;
+      const dir = fromSide === 1 ? 1 : fromSide === 2 ? -1 : 0;
+      parts.push({
+        x, y,
+        vx: dir ? dir*rand(4,14) : rand(-9,9),
+        vy: rand(-20,-8),
+        size: rand(6,12), rot: rand(0,6.28), vr: rand(-.3,.3),
+        color: colors[(Math.random()*colors.length)|0]
+      });
+    }
+    if (!running) { running = true; requestAnimationFrame(tick); }
+  }
+  function tick() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    parts.forEach(p => {
+      p.vy += 0.4; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+      ctx.fillStyle = p.color; ctx.fillRect(-p.size/2, -p.size/4, p.size, p.size/2);
+      ctx.restore();
+    });
+    parts = parts.filter(p => p.y < canvas.height + 30);
+    if (parts.length) requestAnimationFrame(tick); else { running = false; ctx.clearRect(0,0,canvas.width,canvas.height); }
+  }
+
+  // ---- page 1: wrong person ----
+  $("no1").addEventListener("click", () => {
+    show("out");
+    setTimeout(() => show("page1"), 10000);   // back to the first page after 10 seconds
+    sendResult("Someone who isn't " + HER_NAME + " opened your page", `They clicked "No" on "Are you ${HER_NAME}?"\nTime: ${new Date().toLocaleString()}`);
+  });
+
+  // ---- "No" buttons that run away (walking page + date page) ----
+  let dodges = 0;
+
+  function makeRunner(btn, sectionId) {
+    function runAway(px, py) {
+      const r = btn.getBoundingClientRect();
+      const w = r.width, h = r.height, pad = 12;
+      if (!btn.classList.contains("flying")) {
+        // lock the width so the Yes button doesn't jump when No leaves the row
+        btn.style.width = w + "px";
+        btn.classList.add("flying");
+        btn.style.left = r.left + "px";
+        btn.style.top = r.top + "px";
+      }
+      const maxX = innerWidth - w - pad, maxY = innerHeight - h - pad;
+      let nx, ny, tries = 0;
+      do {
+        nx = pad + Math.random() * (maxX - pad);
+        ny = pad + Math.random() * (maxY - pad);
+        tries++;
+      } while (tries < 30 && Math.hypot(nx + w/2 - px, ny + h/2 - py) < 220);
+      btn.style.left = Math.max(pad, nx) + "px";
+      btn.style.top  = Math.max(pad, ny) + "px";
+      dodges++;
+    }
+
+    function near(e) {
+      const r = btn.getBoundingClientRect();
+      const cx = r.left + r.width/2, cy = r.top + r.height/2;
+      return Math.hypot(e.clientX - cx, e.clientY - cy) < Math.max(r.width, r.height) * 0.9 + 30;
+    }
+
+    addEventListener("pointermove", e => {
+      if ($(sectionId).classList.contains("hidden")) return;
+      if (near(e)) runAway(e.clientX, e.clientY);
+    });
+    ["pointerdown","touchstart","mouseenter","click"].forEach(evt =>
+      btn.addEventListener(evt, e => {
+        e.preventDefault();
+        const t = e.touches ? e.touches[0] : e;
+        runAway(t.clientX ?? innerWidth/2, t.clientY ?? innerHeight/2);
+      }, { passive: false })
+    );
+    btn.addEventListener("focus", () => { runAway(innerWidth/2, innerHeight/2); btn.blur(); });
+  }
+
+  const no2 = $("no2");
+  makeRunner(no2, "pDate");
+
+  // ---- final Yes ----
+  $("yes2").addEventListener("click", async () => {
+    no2.classList.add("hidden");
+    confetti(); setTimeout(confetti, 400);
+    show("done");
+    const ok = await sendResult(
+      `${HER_NAME} said YES to the donkey walk date! 🫏`,
+      `${HER_NAME} said YES to a date walking donkeys with ${YOUR_NAME}.\n\nHer answers along the way:\n- ${log.join("\n- ") || "(none recorded)"}\n\nTimes she chased a "No" button (date page): ${dodges}\nTime: ${new Date().toLocaleString()}`
+    );
+    $("errorNote").classList.toggle("hidden", ok);
+  });
+</script>
+</body>
+</html>
