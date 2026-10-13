@@ -417,7 +417,7 @@
   // ---- page 1: wrong person ----
   $("no1").addEventListener("click", () => {
     show("out");
-    setTimeout(() => show("page1"), 10000);   // back to the first page after 10 seconds
+    setTimeout(() => show("page1"), 5000);   // back to the first page after 10 seconds
     sendResult("Someone who isn't " + HER_NAME + " opened your page", `They clicked "No" on "Are you ${HER_NAME}?"\nTime: ${new Date().toLocaleString()}`);
   });
 
