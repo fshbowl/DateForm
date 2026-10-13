@@ -258,6 +258,7 @@
     <h1>Wooooo!!!!</h1>
     <p id="doneText"></p>
     <p class="small">5/5 completed ✓</p>
+    <p class="small hidden" id="errorNote">Your answer didn't go through, so please text me directly.</p>
   </section>
 </main>
 
@@ -360,15 +361,20 @@
 
   // ---- send result by email ----
   async function sendResult(subject, message) {
-    try {
-      const res = await fetch("https://api.web3forms.com/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify({ access_key: ACCESS_KEY, subject, from_name: "Date invite page", message })
-      });
-      return (await res.json()).success === true;
-    } catch (e) { return false; }
+  try {
+    const res = await fetch("https://api.web3forms.com/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({ access_key: ACCESS_KEY, subject, from_name: "Date invite page", message })
+    });
+    const data = await res.json();
+    if (!data.success) console.error("Web3Forms said:", res.status, data);
+    return data.success === true;
+  } catch (e) {
+    console.error("Send failed:", e);
+    return false;
   }
+}
 
   // ---- confetti (no libraries) ----
   const canvas = $("confetti"), ctx = canvas.getContext("2d");
